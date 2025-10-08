@@ -26,6 +26,10 @@ const userSchema  =  new mongoose.Schema({
             phone : {
                   type : String  ,
                   default : null
+            } ,
+            photoUrl : {
+                  type : String , 
+                  default : null
             }
      
 } , {timestamps : true})   

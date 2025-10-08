@@ -89,7 +89,7 @@ export const signUp = async (req, res) => {
         res.cookie("Logintoken", token, {
                 httpOnly: true,       // JS can’t access (secure)
                 secure: false,         // HTTPS only
-                sameSite: "strict",   // Prevent CSRF
+                sameSite: "lax",   // Prevent CSRF
                 maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
@@ -136,14 +136,14 @@ export const login = async (req, res) => {
         })
 
 
-        console.log("this is a token ", token);
+        console.log("this  is a token ", token);
 
 
-
+ 
         res.cookie("Logintoken", token, {
                 httpOnly: true,
                 secure: false,
-                sameSite: "strict",
+                sameSite: "lax",
                 maxAge: 24 * 60 * 60 * 1000
 
         })

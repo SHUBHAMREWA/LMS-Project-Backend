@@ -11,14 +11,14 @@ const connectDB = async()=>{
     }
     catch(error){  
 
-        console.log("DataBase Not connected ❌❌❌" , error.message)
+        console.log("DataBase Not connected ❌❌❌" , error)
 
     }
     finally{
           console.log("connectDB function Called 🔅📊")
     }   
 }
-
+ 
 
 
 export default connectDB 

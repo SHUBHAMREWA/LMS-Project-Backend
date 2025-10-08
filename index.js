@@ -5,6 +5,7 @@ import connectDB from "./config/connectDB.js";
 import cookieParser from "cookie-parser";
 import authRoute from "./routes/authRoute.js";
 import cors from "cors";
+import getUserRoute from "./routes/getUserRoute.js";
 
 
 
@@ -33,6 +34,7 @@ app.use(cookieParser())
 
 //  All route are here 
 app.use("/api/user", authRoute)    // user signup , login  , logout route here
+app.use("/user" , getUserRoute)    //get user info
 
 
 
