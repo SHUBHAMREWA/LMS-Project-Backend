@@ -28,7 +28,7 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 
 
-// cookied parser for Read cookie Data of Client 
+// cookied parser for  Read cookie Data of Client 
 app.use(cookieParser())
 
 

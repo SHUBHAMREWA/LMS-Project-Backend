@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken"  ;
 
 const isAuth = async(req , res , next)=>{    
 
-              console.log("ye hit huaa hai ")
+            //   console.log("ye hit huaa hai ")
       
                 let token = req.cookies.Logintoken ;
           
