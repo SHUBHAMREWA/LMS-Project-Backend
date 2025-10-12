@@ -21,7 +21,8 @@ const userSchema  =  new mongoose.Schema({
             }  ,
             role : {
                  type : String , 
-                 enum : ["student" , "educator"] 
+                 enum : ["student" , "educator"] ,
+                 default : "student"
             } , 
             phone : {
                   type : String  ,
@@ -30,6 +31,11 @@ const userSchema  =  new mongoose.Schema({
             photoUrl : {
                   type : String , 
                   default : null
+            } , 
+            provider : {
+                    type : String , 
+                    enum : ["local" , "google"] , 
+                    default : "local"
             }
      
 } , {timestamps : true})   

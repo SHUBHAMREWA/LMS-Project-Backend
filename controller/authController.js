@@ -79,11 +79,6 @@ export const signUp = async (req, res) => {
    
         const token =   await genToken({
                  userId: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                discription: user.discription,
-                phone: user.phone
         })
 
         console.log("this is a token ", token);
@@ -130,11 +125,6 @@ export const login = async (req, res) => {
 
         const token =   await genToken({
                  userId: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                discription: user.discription,
-                phone: user.phone
         })
 
 
@@ -364,4 +354,78 @@ export const forgotPassword  = async(req ,res) => {
          })
 
 
+}
+
+
+
+// Google SignIn Controller 
+export const googleSignIn = async(req , res)=>{    
+              
+        let { email , name , photoUrl , role} = req.body ;  
+        
+        
+
+        if(!email || !name ) return res.status(400).json({      
+                message : "All field are Required",
+                success : false
+        }) 
+
+        if(!validator.isEmail(email)) return res.status(400).json({
+                message : "Invalid Email",
+                success : false
+        })  
+
+        if(!role){
+                role = "student"
+        }
+
+        console.log(role)
+
+        try {  
+                let user = await User.findOne({email}) ;
+
+        if(!user){
+               user = await User.create({
+                        name , 
+                        email , 
+                        photoUrl ,
+                        role ,
+                        provider : "google"      
+        } )   }
+
+
+
+        const token =   await genToken({
+                userId: user._id,
+        })
+
+        console.log("this is a token from goole auth ", token);
+
+         res.cookie("Logintoken", token, {
+                httpOnly: true,       // JS can’t access (secure)
+                secure: false,         // HTTPS only
+                sameSite: "lax",   // Prevent CSRF
+                maxAge: 24 * 60 * 60 * 1000, // 1 day
+        });
+
+
+        return res.status(200).json({
+                message : "Login Successfully",
+                success : true
+        })
+                
+        } catch (error) { 
+
+                return res.status(500).json({
+                        message : "Google SignIn Failed",
+                        success : false , 
+                        error : error.message
+                })
+
+                
+        }
+
+       
+           
+         
 }
