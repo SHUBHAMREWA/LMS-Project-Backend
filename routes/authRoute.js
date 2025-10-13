@@ -2,6 +2,9 @@
 
 import express from "express" ;
 import { login, logout, signUp , sendOtp ,verifyOtp , forgotPassword , googleSignIn } from "../controller/authController.js";
+import upload from "../middleware/multer.js";
+import { UpdateProfile } from "../controller/update.js";
+import isAuth from "../middleware/isAuth.js";
 
 
 const authRoute = express.Router() ; 
@@ -14,6 +17,7 @@ authRoute.post("/sent-otp" , sendOtp )
 authRoute.post("/verify-otp" , verifyOtp) 
 authRoute.post("/forgot-password" , forgotPassword ) 
 authRoute.post("/google-auth" , googleSignIn ) 
+authRoute.post("/profile-update" , isAuth  , upload.single('photoUrl') , UpdateProfile ) ;
 
 
 export default authRoute ;

@@ -17,7 +17,8 @@ const userSchema  =  new mongoose.Schema({
             }        , 
             
             password : {
-                  type : String 
+                  type : String  ,
+                  default : null
             }  ,
             role : {
                  type : String , 
