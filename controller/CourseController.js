@@ -1,15 +1,18 @@
 
 import { Course } from "../model/Course.js"
 import { Thumbnail } from "../model/Thumbnail.js";
+import cloudinary from "../config/cloudinary.js";
 
 
 
 // add courses by Educator 
 export const addCourse = async(req , res)=>{ 
 
-      const { title , subTitle , discription , mrp , price , isPublished  , }   = req.body ;    
+      const { title , subTitle , description , mrp , price , isPublished   }   = req.body ;     
+      
+      console.log("Ye hit hua" ,title , subTitle , description , mrp , price , isPublished)
 
-      if(!title || !subTitle || !discription || !price){
+      if(!title || !subTitle || !description || !price){
 
        return   res.status(400).json({
                message : "All field are Required",
@@ -23,7 +26,7 @@ export const addCourse = async(req , res)=>{
         let course = await Course.create({
                   title, 
                   subTitle, 
-                  discription, 
+                  description, 
                   mrp, 
                   price, 
                   isPublished  ,
@@ -111,6 +114,39 @@ export const addThumbnail =  async(req , res)=>{
     
 }
 
+
+
+// remove Thumblain fo Couse 
+export const removePhotoCloudinary = async(req , res)=> {    
+            
+       const {publicId}   = req.body ;   
+
+        
+        console.log("this is public Id  ==>" , publicId)
+      
+        try {   
+
+         const result = await cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
+         
+         console.log(result)
+
+          // Check if deletion was successful
+            if (result.result === 'ok') {
+            return res.status(200).json({ message: 'File deleted successfully', result });
+            } else if (result.result === 'not found') {
+            return res.status(404).json({ message: 'File not found', result });
+            } else {
+            return res.status(500).json({ message: 'Cloudinary error', result });
+            }
+                
+            
+        } catch (error) {  
+
+              res.status(500).json(error);
+            
+        }
+     
+}
 
 
 //  Get course to show in Course page and which one is pusblished we can them
