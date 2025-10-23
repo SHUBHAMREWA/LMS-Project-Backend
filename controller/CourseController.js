@@ -164,7 +164,37 @@ export const getPublishedCourse = () => {
 
 
 //  get Creater Course for show the Educator side
-export const getCreaterCourse = () => {
+export const getCreaterCourse = async (req ,res) => {   
+     
+         let userId = req.userId  
+            
+        try {
+        
+            let course = await Course.find({ educatorId : userId })  ; 
+             
+              if(!course) return res.status(404).json({ 
+                 message : "Course Not Found",
+                 success : false
+              })  
+               
+
+               return res.status(200).json({
+                message : "Course Found Successfully",
+                success : true,
+                courseData : course
+               })
+             
+            
+        } catch (error) {               
+
+             console.log("error in GetCreater Course Controller" , error.message)  ;  
+
+             return res.status(500).json({
+                message : error.message , 
+                success : false
+             })           
+
+        }
 
 }
 
@@ -187,7 +217,7 @@ export const editCourse = async (req, res) => {
     }
 
 
-    try {   
+    try {
 
         let course = await Course.findByIdAndUpdate(
             courseId,
@@ -196,11 +226,11 @@ export const editCourse = async (req, res) => {
         );
 
 
-        if(!course){
+        if (!course) {
             return res.status(404).json({
-                message : "Course Not Found",
-                success : false
-                  })
+                message: "Course Not Found",
+                success: false
+            })
         }
 
 
@@ -208,30 +238,30 @@ export const editCourse = async (req, res) => {
             { courseId },
             { $set: { demoLink, images } },
             { new: true }   // 👈 ye likho to updated document return kare
-        )   ;                                                                    
-  
-         if(!updateThumbnail) return res.status(404).status({
-                   message : "Thumbnail Not Found",
-                   success : false
-         })
+        );
+
+        if (!updateThumbnail) return res.status(404).status({
+            message: "Thumbnail Not Found",
+            success: false
+        })
 
 
-         return res.status(200).json({
-              message : "Course Updated Successfully",
-              success : true , 
-              courseId : courseId  , 
-              thumnailId : updateThumbnail._id
-         })
+        return res.status(200).json({
+            message: "Course Updated Successfully",
+            success: true,
+            courseId: courseId,
+            thumnailId: updateThumbnail._id
+        })
 
 
 
     }
-    catch (error) {  
-          return res.status(500).json({ 
-            message : error.message ,
-            success : false 
-            
-          })
+    catch (error) {
+        return res.status(500).json({
+            message: error.message,
+            success: false
+
+        })
 
     }
 
@@ -243,60 +273,83 @@ export const editCourse = async (req, res) => {
 
 
 // Get Course By ID  
-export const getCourseById = async( req , res )=>{  
-       
-            const {couresId}  =  req.params ;  
+export const getCourseById = async (req, res) => {
 
-            try {  
-                 
-                  let course = await Course.findById(couresId) ; 
+    const { couresId } = req.params;
 
-                  if(!course){
-                        return res.status(404).json({
-                              message : "Course Not Found",
-                              success : false
-                        }) 
-                  }  
+    try {
+
+        let course = await Course.findById(couresId);
+
+        if (!course) {
+            return res.status(404).json({
+                message: "Course Not Found",
+                success: false
+            })
+        }
 
 
-                  let tumbnail = await Thumbnail.findOne({courseId : couresId}) ; 
+        let tumbnail = await Thumbnail.findOne({ courseId: couresId });
 
-                  if(!tumbnail){
-                        return res.status(404).json({
-                              message : "Thumbnail Not Found",
-                              success : false
-                        })  }                                                    
 
-                  return res.status(200).json({
-                        message : "Course Found Successfully",
-                        success : true , 
-                        courseData : { course , tumbnail }
-                  })
-                
-            } catch  (error) {   
+        return res.status(200).json({
+            message: "Course Found Successfully",
+            success: true,
+            courseData: { course, tumbnail }
+        })
 
-                  console.log(error.message) ;  
-                   
-                   res.status(500).json({
-                        message : error.message , 
-                        success : false
-                  } )
-                  
-            }
-     
+    } catch (error) {
+
+        console.log(error.message);
+
+        res.status(500).json({
+            message: error.message,
+            success: false
+        })
+
+    }
+
 }
 
 
 // remover Course By id 
-export const removeCourseById = async(req , res)=>{  
+export const removeCourseById = async (req, res) => {
 
-             const {courseId} = req.params ;
-      
-         try {  
-                  
-            
-         } catch (error) {
-            
-         }
+    const { courseId } = req.params;
+
+    try {
+
+        let course = await Course.findByIdAndDelete(courseId);
+
+        if (!course) {
+            return res.status(400).json({
+                message: "Course Not Found",
+                success: false
+            })
+        }
+
+        let thumnail = await Thumbnail.findOneAndDelete({ courseId: courseId });
+
+        if (!thumnail) return res.status(400).json({
+            message: "Thumbnail Not Found",
+            success: false
+        })
+
+
+        return res.status(200).json({
+            message: "Course Deleted Successfully",
+            success: true
+        })
+
+
+    } catch (error) {
+
+        console.log("course Deleted Error", error.message)
+
+        return res.status(500).json({
+            message: error.message,
+            success: false
+        })
+    }
 
 }
