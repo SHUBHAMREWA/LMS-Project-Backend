@@ -8,7 +8,7 @@ import cloudinary from "../config/cloudinary.js";
 // add courses by Educator 
 export const addCourse = async (req, res) => {
 
-    const { title, subTitle, description, mrp, price, isPublished } = req.body;
+    const { title, subTitle, description, mrp, price, isPublished , category } = req.body;
 
     console.log("Ye hit hua", title, subTitle, description, mrp, price, isPublished)
 
@@ -29,6 +29,7 @@ export const addCourse = async (req, res) => {
             description,
             mrp,
             price,
+            category,
             isPublished,
             educatorId: req.userId
         })
@@ -154,10 +155,70 @@ export const removePhotoCloudinary = async (req, res) => {
 }
 
 
-//  Get course to show in Course page and which one is pusblished we can them
-export const getPublishedCourse = () => {
+// ▒▒ Get course to show in Course page and which one is pusblished we can them ▒▒
+export const getPublishedCourse = async(req , res) => {
+
+    try {
+
+     let course = await Course.find({ isPublished: true });
 
 
+        if (!course) {
+            return res.status(404).json({
+                message: "Course Not Found",
+                success: false
+            })
+        }
+
+
+
+        return res.status(200).json({
+            message: "Course Found Successfully",
+            success: true,
+            courseData: course
+        })
+
+    } catch (error) {
+
+        console.log(error.message);
+
+        res.status(500).json({
+            message: error.message,
+            success: false
+        })
+
+    }
+
+}
+
+ export const ThumbnailOfcourse = async(req ,res)=>{  
+          
+       let id = req.params.id ; 
+         
+      try {  
+          let thumbnail  = await Thumbnail.findOne({courseId : id}) ;  
+           
+          if(!thumbnail) return res.status(404).json({
+                message : "Thumbnail Not Found",
+                success : false
+          }) 
+           
+           return res.status(200).json({
+                 message : "Thumbnail Found Successfully",
+                 success : true,
+                 thumbnailData : thumbnail
+           })
+        
+      } catch (error) {   
+           
+         return res.status(500).json({
+                message : error.message , 
+                success : false
+         })
+        
+      }
+     
+      
 }
 
 
@@ -204,7 +265,7 @@ export const getCreaterCourse = async (req ,res) => {
 // ▒▒ Edit Course ▒▒  
 export const editCourse = async (req, res) => {
 
-    const { title, subTitle, description, mrp, price, isPublished, courseId, demoLink, images } = req.body;
+    const { title, subTitle, description, mrp, price,  category , isPublished, courseId, demoLink, images } = req.body;
 
 
     if (!title || !subTitle || !description || !price || !courseId) {
@@ -221,7 +282,7 @@ export const editCourse = async (req, res) => {
 
         let course = await Course.findByIdAndUpdate(
             courseId,
-            { $set: { title, subTitle, description, mrp, price, isPublished } },
+            { $set: { title, subTitle, description, mrp, price, isPublished , category } },
             { new: true, runValidators: true }
         );
 
@@ -332,7 +393,7 @@ export const removeCourseById = async (req, res) => {
 
         if (!thumnail) return res.status(400).json({
             message: "Thumbnail Not Found",
-            success: false
+            success:  true
         })
 
 
