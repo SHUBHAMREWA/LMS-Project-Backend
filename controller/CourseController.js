@@ -8,7 +8,7 @@ import cloudinary from "../config/cloudinary.js";
 // add courses by Educator 
 export const addCourse = async (req, res) => {
 
-    const { title, subTitle, description, mrp, price, isPublished , category } = req.body;
+    const { title, subTitle, description, mrp, price, isPublished, category } = req.body;
 
     console.log("Ye hit hua", title, subTitle, description, mrp, price, isPublished)
 
@@ -156,14 +156,51 @@ export const removePhotoCloudinary = async (req, res) => {
 
 
 // ▒▒ Get course to show in Course page and which one is pusblished we can them ▒▒
-export const getPublishedCourse = async(req , res) => {
+export const getPublishedCourse = async (req, res) => {
 
     try {
 
-     let course = await Course.find({ isPublished: true });
+        const allCourses = await Course.aggregate([
+            {
+                $match: {
+                    isPublished: true  // sirf published courses
+                }
+            },
+            {
+                $lookup: {
+                    from: "thumbnails",
+                    localField: "_id",
+                    foreignField: "courseId",
+                    as: "thumbnails"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$thumbnails",
+                    preserveNullAndEmptyArrays: true  // agar thumbnail na ho toh bhi course dikhe
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    description: 1,
+                    price: 1,
+                    category: 1,
+                    _id: 1,
+                    mrp: 1,
+                    subTitle: 1,
+                    description: 1,
+                    "thumbnails.images": 1,
+                    "thumbnails.demoLink": 1
+                }
+            }
+        ]);
 
+        console.log("this is a course fetch", allCourses)
 
-        if (!course) {
+        // return
+
+        if (!allCourses) {
             return res.status(404).json({
                 message: "Course Not Found",
                 success: false
@@ -175,7 +212,7 @@ export const getPublishedCourse = async(req , res) => {
         return res.status(200).json({
             message: "Course Found Successfully",
             success: true,
-            courseData: course
+            courseData: allCourses
         })
 
     } catch (error) {
@@ -191,71 +228,41 @@ export const getPublishedCourse = async(req , res) => {
 
 }
 
- export const ThumbnailOfcourse = async(req ,res)=>{  
-          
-       let id = req.params.id ; 
-         
-      try {  
-          let thumbnail  = await Thumbnail.findOne({courseId : id}) ;  
-           
-          if(!thumbnail) return res.status(404).json({
-                message : "Thumbnail Not Found",
-                success : false
-          }) 
-           
-           return res.status(200).json({
-                 message : "Thumbnail Found Successfully",
-                 success : true,
-                 thumbnailData : thumbnail
-           })
-        
-      } catch (error) {   
-           
-         return res.status(500).json({
-                message : error.message , 
-                success : false
-         })
-        
-      }
-     
-      
-}
-
 
 
 
 //  get Creater Course for show the Educator side
-export const getCreaterCourse = async (req ,res) => {   
-     
-         let userId = req.userId  
-            
-        try {
-        
-            let course = await Course.find({ educatorId : userId })  ; 
-             
-              if(!course) return res.status(404).json({ 
-                 message : "Course Not Found",
-                 success : false
-              })  
-               
+export const getCreaterCourse = async (req, res) => {
 
-               return res.status(200).json({
-                message : "Course Found Successfully",
-                success : true,
-                courseData : course
-               })
-             
-            
-        } catch (error) {               
+    let userId = req.userId
 
-             console.log("error in GetCreater Course Controller" , error.message)  ;  
+    try {
 
-             return res.status(500).json({
-                message : error.message , 
-                success : false
-             })           
+        let course = await Course.find({ educatorId: userId });
 
-        }
+        if (!course) return res.status(404).json({
+            message: "Course Not Found",
+            success: false
+        })
+
+
+        return res.status(200).json({
+            message: "Course Found Successfully",
+            success: true,
+            courseData: course
+        })
+
+
+    } catch (error) {
+
+        console.log("error in GetCreater Course Controller", error.message);
+
+        return res.status(500).json({
+            message: error.message,
+            success: false
+        })
+
+    }
 
 }
 
@@ -265,7 +272,7 @@ export const getCreaterCourse = async (req ,res) => {
 // ▒▒ Edit Course ▒▒  
 export const editCourse = async (req, res) => {
 
-    const { title, subTitle, description, mrp, price,  category , isPublished, courseId, demoLink, images } = req.body;
+    const { title, subTitle, description, mrp, price, category, isPublished, courseId, demoLink, images } = req.body;
 
 
     if (!title || !subTitle || !description || !price || !courseId) {
@@ -282,7 +289,7 @@ export const editCourse = async (req, res) => {
 
         let course = await Course.findByIdAndUpdate(
             courseId,
-            { $set: { title, subTitle, description, mrp, price, isPublished , category } },
+            { $set: { title, subTitle, description, mrp, price, isPublished, category } },
             { new: true, runValidators: true }
         );
 
@@ -393,7 +400,7 @@ export const removeCourseById = async (req, res) => {
 
         if (!thumnail) return res.status(400).json({
             message: "Thumbnail Not Found",
-            success:  true
+            success: true
         })
 
 
@@ -414,3 +421,4 @@ export const removeCourseById = async (req, res) => {
     }
 
 }
+
