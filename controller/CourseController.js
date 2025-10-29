@@ -69,7 +69,7 @@ export const addCourse = async (req, res) => {
 
 
 
-}
+} 
 
 //  add Thumblain of Course 
 export const addThumbnail = async (req, res) => {
