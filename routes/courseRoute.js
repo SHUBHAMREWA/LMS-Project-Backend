@@ -2,7 +2,7 @@ import express  from "express"  ;
 import { addCourse, addCourseModule, addThumbnail, createLesson, deleteLesson, deleteModule, editCourse, 
         fetchLessonByModule, fetchModuleByCourse, getCourseById, 
         getCreaterCourse, getPublishedCourse, removeCourseById, 
-        removePhotoCloudinary } from "../controller/CourseController.js"; 
+        removePhotoCloudinary, getPublishedByEducator, getModulesWithLessonsPublic } from "../controller/CourseController.js"; 
       
 import isAuth from "../middleware/isAuth.js";
 
@@ -18,6 +18,8 @@ CourseRouter.delete("/delete-course/:courseId" , isAuth , removeCourseById )
 CourseRouter.get("/creater-course", isAuth ,  getCreaterCourse )
 CourseRouter.get("/getcourse-by-id/:couresId", getCourseById)
 CourseRouter.get("/getAllcourse" , getPublishedCourse )
+CourseRouter.get("/published-by-educator/:educatorId" , getPublishedByEducator )
+CourseRouter.get("/modules-with-lessons/:courseId" , getModulesWithLessonsPublic )
 
 // Routes for Modules and Lessons 
 CourseRouter.post("/add-module", isAuth ,  addCourseModule) ;

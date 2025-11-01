@@ -240,10 +240,10 @@ export const getCreaterCourse = async (req, res) => {
 
     try {
 
-        let course = await await Course.aggregate([
+        let course =  await Course.aggregate([
             {
                 $match: {
-                    educatorId :  new mongoose.Types.ObjectId(userId)  // sirf published courses
+                    educatorId :  new mongoose.Types.ObjectId(userId) 
                 }
             },
             {
@@ -304,6 +304,90 @@ export const getCreaterCourse = async (req, res) => {
 
 }
 
+
+
+
+// Get published courses by educator (for course details page)
+export const getPublishedByEducator = async (req, res) => {
+    const { educatorId } = req.params;
+
+    try {
+        const courses = await Course.aggregate([
+            { $match: { isPublished: true, educatorId: new mongoose.Types.ObjectId(educatorId) } },
+            {
+                $lookup: {
+                    from: "thumbnails",
+                    localField: "_id",
+                    foreignField: "courseId",
+                    as: "thumbnails",
+                },
+            },
+            { $unwind: { path: "$thumbnails", preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    subTitle: 1,
+                    description: 1,
+                    mrp: 1,
+                    price: 1,
+                    category: 1,
+                    educatorId: 1,
+                    "thumbnails.images": 1,
+                    "thumbnails.demoLink": 1,
+                },
+            },
+        ]);
+
+        return res.status(200).json({
+            message: "Courses Found Successfully",
+            success: true,
+            courseData: courses,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message,
+            success: false,
+        });
+    }
+}
+
+
+
+// Get modules with lessons (public)
+export const getModulesWithLessonsPublic = async (req, res) => {
+    const { courseId } = req.params;
+
+    if (!courseId) return res.status(400).json({ message: "Course Id is Required", success: false });
+
+    try {
+        const modules = await CourseModule.aggregate([
+            { $match: { courseId: new mongoose.Types.ObjectId(courseId) } },
+            { $sort: { number: 1 } },
+            {
+                $lookup: {
+                    from: "lessons",
+                    localField: "_id",
+                    foreignField: "moduleId",
+                    as: "lessons",
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    number: 1,
+                    lessons: { _id: 1, name: 1, number: 1, lessonDetails: 1, videoUrl: 1 },
+                },
+            },
+        ]);
+
+        return res.status(200).json({ message: "Modules Found", success: true, modules });
+    } catch (error) {
+        return res.status(500).json({ message: error.message, success: false });
+    }
+}
 
 
 
@@ -385,24 +469,70 @@ export const getCourseById = async (req, res) => {
 
     try {
 
-        let course = await Course.findById(couresId);
+        const courseAgg = await Course.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(couresId) } },
+            {
+                $lookup: {
+                    from: "thumbnails",
+                    localField: "_id",
+                    foreignField: "courseId",
+                    as: "thumbnails",
+                },
+            },
+            {
+                $unwind: {
+                    path: "$thumbnails",
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "educatorId",
+                    foreignField: "_id",
+                    as: "educator",
+                },
+            },
+            {
+                $unwind: {
+                    path: "$educator",
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    subTitle: 1,
+                    description: 1,
+                    mrp: 1,
+                    price: 1,
+                    category: 1,
+                    educatorId: 1,
+                    "thumbnails.images": 1,
+                    "thumbnails.demoLink": 1,
+                    "educator._id": 1,
+                    "educator.name": 1,
+                    "educator.email": 1,
+                    "educator.photoUrl": 1,
+                },
+            },
+        ]);
 
-        if (!course) {
+        if (!courseAgg || courseAgg.length === 0) {
             return res.status(404).json({
                 message: "Course Not Found",
-                success: false
-            })
+                success: false,
+            });
         }
 
-
-        let tumbnail = await Thumbnail.findOne({ courseId: couresId });
-
+        const course = courseAgg[0];
 
         return res.status(200).json({
             message: "Course Found Successfully",
             success: true,
-            courseData: { course, tumbnail }
-        })
+            courseData: course,
+        });
 
     } catch (error) {
 
@@ -410,8 +540,8 @@ export const getCourseById = async (req, res) => {
 
         res.status(500).json({
             message: error.message,
-            success: false
-        })
+            success: false,
+        });
 
     }
 
