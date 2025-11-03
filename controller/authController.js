@@ -47,8 +47,6 @@ export const signUp = async (req, res) => {
         }
 
 
-
-
         let isEmailExits = await User.findOne({ email: email });
 
         if (isEmailExits) {

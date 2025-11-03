@@ -191,6 +191,7 @@ export const getPublishedCourse = async (req, res) => {
                     _id: 1,
                     mrp: 1,
                     subTitle: 1,
+                    isPublished: 1,
                     description: 1,
                     "thumbnails.images": 1,
                     "thumbnails.demoLink": 1
@@ -269,6 +270,7 @@ export const getCreaterCourse = async (req, res) => {
                     _id: 1,
                     mrp: 1,
                     subTitle: 1,
+                    isPublished: 1,
                     description: 1,
                     "thumbnails.images": 1,
                     "thumbnails.demoLink": 1
@@ -508,6 +510,7 @@ export const getCourseById = async (req, res) => {
                     mrp: 1,
                     price: 1,
                     category: 1,
+                    isPublished: 1,
                     educatorId: 1,
                     "thumbnails.images": 1,
                     "thumbnails.demoLink": 1,
@@ -707,19 +710,37 @@ export const fetchModuleByCourse = async (req, res) => {
      
      try {
 
-        let module = await CourseModule.find({ courseId });
+        // Include lessons for each module so frontend can show counts
+        const modules = await CourseModule.aggregate([
+            { $match: { courseId: new mongoose.Types.ObjectId(courseId) } },
+            { $sort: { number: 1 } },
+            {
+                $lookup: {
+                    from: "lessons",
+                    localField: "_id",
+                    foreignField: "moduleId",
+                    as: "lessons",
+                },
+            },
+            {
+                $addFields: { lessonsCount: { $size: "$lessons" } }
+            },
+            {
+                $project: { name: 1, number: 1, courseId: 1, lessons: 1, lessonsCount: 1 }
+            }
+        ]);
 
-        if(!module) return res.status(404).json({
+        if(!modules) return res.status(404).json({
             message : "Module Not Found",
             success : false
         })
 
-        console.log("fetch course Module data successFully ✅✅✅"  , module)
+        console.log("fetch course Module data successFully ✅✅✅"  , modules)
 
         return res.status(200).json({
             message : "Module Found Successfully",
             success : true , 
-            moduleData : module
+            moduleData : modules
         })
         
      } catch (error) {

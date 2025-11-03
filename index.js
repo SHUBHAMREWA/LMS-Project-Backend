@@ -7,44 +7,50 @@ import authRoute from "./routes/authRoute.js";
 import cors from "cors";
 import getUserRoute from "./routes/getUserRoute.js";
 import CourseRouter from "./routes/courseRoute.js";
-
-
+import enrollmentRoute from "./routes/enrollRoute.js"
 
 
 // dotenv config for use procces.env   
 dotenv.config();
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5001;
 
 const app = express();
 
 app.use(express.json());
 
-// cors for Cross origin Resource Sharing 
-app.use(cors({
-      origin: "http://localhost:5173", // your frontend URL
-      credentials: true,               // allow cookies, JWT, etc.
-}));
+// CORS for Cross-Origin Resource Sharing with flexible origin (dev + env)
+const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"].filter(Boolean);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 // for reading from data we use urlencoded 
 app.use(express.urlencoded({ extended: true }));
 
+// cookie parser for Read cookie Data of Client 
+app.use(cookieParser());
 
-// cookied parser for  Read cookie Data of Client 
-app.use(cookieParser())
+// All routes are here 
+app.use("/api/user", authRoute); // user signup , login  , logout route here
+app.use("/user", getUserRoute); // get user info
+app.use("/api/course", CourseRouter); // Course Related Routes here
 
-
-//  All route are here 
-app.use("/api/user", authRoute)    // user signup , login  , logout route here
-app.use("/user" , getUserRoute)    //get user info
-app.use("/api/course" , CourseRouter )   //  Course Related Routes here
-
+// Enroll Course purchase Route Here 
+app.use("/api/enroll" , enrollmentRoute ) ;
 
 
 // ▒▒▒ Port listen Here ▒▒▒
 app.listen(PORT, () => {
-      console.log(`server is running on  PORT : ${PORT}`)
-      // connected DB on port Listen  
-      connectDB();
-}
-)
+  console.log(`server is running on  PORT : ${PORT}`);
+  // connect DB on port listen
+  connectDB();
+});
