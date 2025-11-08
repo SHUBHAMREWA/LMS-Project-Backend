@@ -2,7 +2,8 @@ import express  from "express"  ;
 import { addCourse, addCourseModule, addThumbnail, createLesson, deleteLesson, deleteModule, editCourse, 
         fetchLessonByModule, fetchModuleByCourse, getCourseById, 
         getCreaterCourse, getPublishedCourse, removeCourseById, 
-        removePhotoCloudinary, getPublishedByEducator, getModulesWithLessonsPublic } from "../controller/CourseController.js"; 
+        removePhotoCloudinary, getPublishedByEducator, getModulesWithLessonsPublic, 
+        enrollCourses, addReview } from "../controller/CourseController.js"; 
       
 import isAuth from "../middleware/isAuth.js";
 
@@ -20,6 +21,8 @@ CourseRouter.get("/getcourse-by-id/:couresId", getCourseById)
 CourseRouter.get("/getAllcourse" , getPublishedCourse )
 CourseRouter.get("/published-by-educator/:educatorId" , getPublishedByEducator )
 CourseRouter.get("/modules-with-lessons/:courseId" , getModulesWithLessonsPublic )
+CourseRouter.get("/getenrollcourses" , isAuth , enrollCourses)
+CourseRouter.post("/add-review", isAuth, addReview)
 
 // Routes for Modules and Lessons 
 CourseRouter.post("/add-module", isAuth ,  addCourseModule) ;
@@ -28,6 +31,10 @@ CourseRouter.get("/get-modules/:courseId" , isAuth , fetchModuleByCourse) ;
 CourseRouter.get("/get-lessons/:moduleId" , isAuth , fetchLessonByModule) ;
 CourseRouter.delete("/module-delete/:moduleId" , isAuth , deleteModule) ;
 CourseRouter.delete("/lesson-delete/:lessonId" , isAuth , deleteLesson) ;
+
+
+// add review 
+CourseRouter.post("/add-review" , isAuth , addReview)
 
 
 export default CourseRouter ;

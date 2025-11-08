@@ -5,6 +5,8 @@ import cloudinary from "../config/cloudinary.js";
 import { CourseModule } from "../model/CourseModule.js";
 import LessonModule from "../model/LessonModule.js";
 import mongoose from "mongoose";
+import { Enrollment } from "../model/Enrollment.js";
+import { Review } from "../model/Reviews.js";
 
 
 // add courses by Educator 
@@ -123,7 +125,6 @@ export const addThumbnail = async (req, res) => {
 }
 
 
-
 // remove Thumblain fo Couse 
 export const removePhotoCloudinary = async (req, res) => {
 
@@ -232,81 +233,118 @@ export const getPublishedCourse = async (req, res) => {
 }
 
 
-
-
 //  get Creater Course for show the Educator side
 export const getCreaterCourse = async (req, res) => {
+  try {
+    const userId = req.userId;
 
-    let userId = req.userId
+    const courses = await Course.aggregate([
+      // 1️⃣ Match courses created by logged-in user
+      {
+        $match: {
+          educatorId: new mongoose.Types.ObjectId(userId),
+        },
+      },
 
-    try {
+      // 2️⃣ Lookup course modules
+      {
+        $lookup: {
+          from: "coursemodules",
+          localField: "_id",
+          foreignField: "courseId",
+          as: "modules",
+        },
+      },
 
-        let course =  await Course.aggregate([
-            {
-                $match: {
-                    educatorId :  new mongoose.Types.ObjectId(userId) 
-                }
-            },
-            {
-                $lookup: {
-                    from: "thumbnails",
-                    localField: "_id",
-                    foreignField: "courseId",
-                    as: "thumbnails"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$thumbnails",
-                    preserveNullAndEmptyArrays: true  // agar thumbnail na ho toh bhi course dikhe
-                }
-            },
-            {
-                $project: {
-                    title: 1,
-                    description: 1,
-                    price: 1,
-                    category: 1,
-                    _id: 1,
-                    mrp: 1,
-                    subTitle: 1,
-                    isPublished: 1,
-                    description: 1,
-                    "thumbnails.images": 1,
-                    "thumbnails.demoLink": 1
-                }
-            }
-        ]);  
+      // 3️⃣ Extract all module IDs
+      {
+        $addFields: {
+          moduleIds: "$modules._id",
+        },
+      },
 
+      // 4️⃣ Lookup lessons for those modules
+      {
+        $lookup: {
+          from: "lessons",
+          localField: "moduleIds",
+          foreignField: "moduleId",
+          as: "lessons",
+        },
+      },
 
+      // 5️⃣ Count lessons
+      {
+        $addFields: {
+          lessonNumbers: { $size: "$lessons" },
+        },
+      },
 
-        if (!course) return res.status(404).json({
-            message: "Course Not Found",
-            success: false
-        })
+      // 6️⃣ Lookup enrollments for each course
+      {
+        $lookup: {
+          from: "enrollments",
+          localField: "_id",
+          foreignField: "courseId",
+          as: "enrollments",
+        },
+      },
 
+      // 7️⃣ Count enrollments
+      {
+        $addFields: {
+          enrollmentNumbers: { $size: "$enrollments" },
+        },
+      },
 
-        return res.status(200).json({
-            message: "Course Found Successfully",
-            success: true,
-            courseData: course
-        })
+      // 8️⃣ Lookup thumbnails (optional)
+      {
+        $lookup: {
+          from: "thumbnails",
+          localField: "_id",
+          foreignField: "courseId",
+          as: "thumbnails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$thumbnails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
+      // 9️⃣ Final projection
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          subTitle: 1,
+          description: 1,
+          mrp: 1,
+          price: 1,
+          category: 1,
+          isPublished: 1,
+          "thumbnails.images": 1,
+          "thumbnails.demoLink": 1,
+          lessonNumbers: 1,
+          enrollmentNumbers: 1,
+        },
+      },
+    ]);
 
-    } catch (error) {
-
-        console.log("error in GetCreater Course Controller", error.message);
-
-        return res.status(500).json({
-            message: error.message,
-            success: false
-        })
-
-    }
-
-}
-
-
+    return res.status(200).json({
+      message: "Courses fetched successfully",
+      success: true,
+      courseData: courses,
+    });
+  } catch (error) {
+    console.log("Error in getCreaterCourse:", error.message);
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
 
 
 // Get published courses by educator (for course details page)
@@ -356,7 +394,6 @@ export const getPublishedByEducator = async (req, res) => {
 }
 
 
-
 // Get modules with lessons (public)
 export const getModulesWithLessonsPublic = async (req, res) => {
     const { courseId } = req.params;
@@ -390,7 +427,6 @@ export const getModulesWithLessonsPublic = async (req, res) => {
         return res.status(500).json({ message: error.message, success: false });
     }
 }
-
 
 
 // ▒▒ Edit Course ▒▒  
@@ -466,89 +502,123 @@ export const editCourse = async (req, res) => {
 
 // Get Course By ID  
 export const getCourseById = async (req, res) => {
+  const { couresId } = req.params;
 
-    const { couresId } = req.params;
+  try {
+    const courseAgg = await Course.aggregate([
+      // 1️⃣ Match course by ID
+      { $match: { _id: new mongoose.Types.ObjectId(couresId) } },
 
-    try {
+      // 2️⃣ Lookup thumbnails
+      {
+        $lookup: {
+          from: "thumbnails",
+          localField: "_id",
+          foreignField: "courseId",
+          as: "thumbnails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$thumbnails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
-        const courseAgg = await Course.aggregate([
-            { $match: { _id: new mongoose.Types.ObjectId(couresId) } },
+      // 3️⃣ Lookup educator (creator)
+      {
+        $lookup: {
+          from: "users",
+          localField: "educatorId",
+          foreignField: "_id",
+          as: "educator",
+        },
+      },
+      {
+        $unwind: {
+          path: "$educator",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 4️⃣ Lookup all reviews related to this course
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "courseId",
+          as: "reviews",
+          pipeline: [
+            // 👇 Optional: include student info with each review
             {
-                $lookup: {
-                    from: "thumbnails",
-                    localField: "_id",
-                    foreignField: "courseId",
-                    as: "thumbnails",
-                },
+              $lookup: {
+                from: "users",
+                localField: "studentId",
+                foreignField: "_id",
+                as: "student",
+              },
             },
+            { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
             {
-                $unwind: {
-                    path: "$thumbnails",
-                    preserveNullAndEmptyArrays: true,
-                },
+              $project: {
+                _id: 1,
+                rating: 1,
+                comment: 1,
+                "student._id": 1,
+                "student.name": 1,
+                "student.photoUrl": 1,
+              },
             },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "educatorId",
-                    foreignField: "_id",
-                    as: "educator",
-                },
-            },
-            {
-                $unwind: {
-                    path: "$educator",
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $project: {
-                    _id: 1,
-                    title: 1,
-                    subTitle: 1,
-                    description: 1,
-                    mrp: 1,
-                    price: 1,
-                    category: 1,
-                    isPublished: 1,
-                    educatorId: 1,
-                    "thumbnails.images": 1,
-                    "thumbnails.demoLink": 1,
-                    "educator._id": 1,
-                    "educator.name": 1,
-                    "educator.email": 1,
-                    "educator.photoUrl": 1,
-                },
-            },
-        ]);
+          ],
+        },
+      },
 
-        if (!courseAgg || courseAgg.length === 0) {
-            return res.status(404).json({
-                message: "Course Not Found",
-                success: false,
-            });
-        }
+      // 5️⃣ Final projection
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          subTitle: 1,
+          description: 1,
+          mrp: 1,
+          price: 1,
+          category: 1,
+          isPublished: 1,
+          educatorId: 1,
+          "thumbnails.images": 1,
+          "thumbnails.demoLink": 1,
+          "educator._id": 1,
+          "educator.name": 1,
+          "educator.email": 1,
+          "educator.photoUrl": 1,
+          reviews: 1, // ✅ include reviews array
+        },
+      },
+    ]);
 
-        const course = courseAgg[0];
-
-        return res.status(200).json({
-            message: "Course Found Successfully",
-            success: true,
-            courseData: course,
-        });
-
-    } catch (error) {
-
-        console.log(error.message);
-
-        res.status(500).json({
-            message: error.message,
-            success: false,
-        });
-
+    if (!courseAgg || courseAgg.length === 0) {
+      return res.status(404).json({
+        message: "Course Not Found",
+        success: false,
+      });
     }
 
-}
+    const course = courseAgg[0];
+
+    return res.status(200).json({
+      message: "Course Found Successfully",
+      success: true,
+      courseData: course,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
 
 
 // remover Course By id 
@@ -594,7 +664,108 @@ export const removeCourseById = async (req, res) => {
 }
 
 
+// Get students Enroll Course 
+export const enrollCourses = async (req, res) => {
+  const userId = req.userId;
 
+  if (!userId) {
+    return res.status(400).json({
+      message: "User ID is required",
+      success: false,
+    });
+  }
+
+  try {
+    // ✅ Step 1: populate courseId properly
+    const enrollments = await Enrollment.find({ userId })
+      .populate({
+        path: "courseId",
+        model: "Course", // explicitly link the model
+        select: "title subTitle description price category",
+      })
+      .exec();
+
+    console.log("🔍 Populated Enrollments:", enrollments);
+
+    if (!enrollments?.length) {
+      return res.status(404).json({
+        message: "No enrolled courses found",
+        success: false,
+      });
+    }
+
+    // ✅ Step 2: Attach thumbnail for each course
+    const fullData = await Promise.all(
+      enrollments.map(async (enroll) => {
+        const course = enroll.courseId;
+
+        if (!course || !course._id) {
+          console.log("❌ Course not populated for:", enroll._id);
+          return null;
+        }
+
+        const thumbnail = await Thumbnail.findOne({
+          courseId: new mongoose.Types.ObjectId(course._id),
+        }).select("images demoLink");
+
+        return {
+          _id: enroll._id,
+          userId: enroll.userId,
+          paymentId: enroll.paymentId,
+          course: {
+            ...course.toObject(),
+            thumbnail: thumbnail?.images || [],
+            demoLink: thumbnail?.demoLink || null,
+          },
+        };
+      })
+    );
+
+    const filtered = fullData.filter(Boolean);
+
+    return res.status(200).json({
+      message: "Enrolled courses fetched successfully",
+      success: true,
+      enrollCoursesData: filtered,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching enrolled courses:", error.message);
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
+
+//  Review controller 
+export const addReview = async (req, res) => {
+  const { courseId, rating, comment } = req.body;
+  const userId = req.userId;
+
+  if (!courseId || !userId) {
+    return res.status(400).json({ message: "CourseId and auth required", success: false });
+  }
+
+  try {
+    const checkCourse = await Course.findById(courseId);
+    if (!checkCourse) return res.status(404).json({ message: "Course Not Found", success: false });
+
+    const created = await Review.create({
+      studentId: userId,
+      courseId,
+      Rating: Number(rating || 5),
+      comment: comment || null,
+    });
+
+    if (!created) return res.status(400).json({ message: "Review Not Created", success: false });
+
+    return res.status(201).json({ message: "Review Created Successfully", success: true });
+  } catch (error) {
+    console.log("error in ADD review ❌❌❌❌", error.message);
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
 
 
 // ▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒▒◄▒▒▒◄▒▒▒▒◄◄▒▒

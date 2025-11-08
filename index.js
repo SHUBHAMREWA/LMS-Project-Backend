@@ -20,18 +20,23 @@ const app = express();
 app.use(express.json());
 
 // CORS for Cross-Origin Resource Sharing with flexible origin (dev + env)
-const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"].filter(Boolean);
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      if (
+        !origin ||
+        origin.includes("localhost:5173") ||
+        origin.startsWith("http://192.168.")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
+
 
 // for reading from data we use urlencoded 
 app.use(express.urlencoded({ extended: true }));
