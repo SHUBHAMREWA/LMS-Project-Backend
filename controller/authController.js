@@ -82,10 +82,10 @@ export const signUp = async (req, res) => {
         console.log("this is a token ", token);
 
         res.cookie("Logintoken", token, {
-                httpOnly: true,       // JS can’t access (secure)
-                secure: false,         // HTTPS only
-                sameSite: "lax",   // Prevent CSRF
-                maxAge: 24 * 60 * 60 * 1000, // 1 day
+                httpOnly: true,
+                secure: true,            // HTTPS only in production
+                sameSite: "none",        // allow cross-origin cookies
+                maxAge: 24 * 60 * 60 * 1000,
         });
 
         res.status(201).json({
@@ -139,10 +139,9 @@ export const login = async (req, res) => {
  
         res.cookie("Logintoken", token, {
                 httpOnly: true,
-                secure: false,
-                sameSite: "lax",
+                secure: true,
+                sameSite: "none",
                 maxAge: 24 * 60 * 60 * 1000
-
         })
 
 
@@ -160,8 +159,8 @@ export const logout = async (req, res) => {
                 // Clear cookie by setting it to empty and expired
                 res.clearCookie("Logintoken", {
                         httpOnly: true,
-                        secure: false,
-                        sameSite: "strict",
+                        secure: true,
+                        sameSite: "none",
                 });
 
                 return res.status(200).json({
