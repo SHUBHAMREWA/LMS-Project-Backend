@@ -406,10 +406,10 @@ export const googleSignIn = async(req , res)=>{
         console.log("this is a token from goole auth ", token);
 
          res.cookie("Logintoken", token, {
-                httpOnly: true,       // JS can’t access (secure)
-                secure: false,         // HTTPS only
-                sameSite: "lax",   // Prevent CSRF
-                maxAge: 24 * 60 * 60 * 1000, // 1 day
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+                maxAge: 24 * 60 * 60 * 1000,
         });
 
 
