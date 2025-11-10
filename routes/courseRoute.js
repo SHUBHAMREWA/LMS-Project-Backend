@@ -6,6 +6,7 @@ import { addCourse, addCourseModule, addThumbnail, createLesson, deleteLesson, d
         enrollCourses, addReview } from "../controller/CourseController.js"; 
       
 import isAuth from "../middleware/isAuth.js";
+import { searchWithai } from "../controller/searchWithai.js";
 
 const CourseRouter = express.Router() ; 
 
@@ -34,7 +35,11 @@ CourseRouter.delete("/lesson-delete/:lessonId" , isAuth , deleteLesson) ;
 
 
 // add review 
-CourseRouter.post("/add-review" , isAuth , addReview)
+CourseRouter.post("/add-review" , isAuth , addReview)  ;
+
+
+// search with Ai
+CourseRouter.post("/search-with-ai" ,  searchWithai )
 
 
 export default CourseRouter ;
