@@ -23,19 +23,28 @@ app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://vihanclasses.vercel.app", // 🚀 your deployed frontend
+      ];
+
+      // ✅ Allow no-origin requests (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
       if (
-        !origin ||
-        origin.includes("localhost:5173") ||
+        allowedOrigins.includes(origin) ||
         origin.startsWith("http://192.168.")
       ) {
         callback(null, true);
       } else {
+        console.log("❌ Blocked by CORS:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
   })
 );
+
 
 
 // for reading from data we use urlencoded 
