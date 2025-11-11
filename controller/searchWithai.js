@@ -22,17 +22,17 @@ export const searchWithai = async (req, res) => {
       apiKey: process.env.GEMINI_API_KEY,
     });
 
-    // ✅ Build the prompt
+    // ✅ Build Prompt
     const Prompt = `
 You are an intelligent course keyword generator.
 
-Courses List:
+Courses:
 Web Development, UI/UX Designing, Ethical Hacking, AI/ML, App Development, Data Science, Data Analytics, AI Tools.
 
 Instructions:
 - Analyze the user's query.
-- Return one or more related course names (comma-separated).
-- No explanation or extra text.
+- Return only the most relevant course names, comma-separated.
+- No explanations or extra text.
 
 Example:
 Input: "I want to make a website for my business"
@@ -41,13 +41,28 @@ Output: Web Development, UI/UX Designing
 User Query: ${query}
 `;
 
-    // ✅ Generate content with latest SDK syntax
+    // ✅ Generate content using new SDK format
     const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash", // or gemini-2.5-flash
-      contents: [{ role: "user", parts: [{ text: Prompt }] }],
+      model: "gemini-1.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: Prompt }],
+        },
+      ],
     });
 
-    const aiResponseText = result.response.text();
+    // ✅ Safely extract the AI text (new SDK response structure)
+    let aiResponseText = "";
+
+    if (result?.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      aiResponseText = result.response.candidates[0].content.parts[0].text;
+    } else if (result?.response?.text) {
+      aiResponseText = result.response.text();
+    } else {
+      console.log("⚠️ Unexpected Gemini response:", JSON.stringify(result, null, 2));
+      throw new Error("Gemini returned an unexpected format");
+    }
 
     if (!aiResponseText || aiResponseText.trim() === "") {
       return res.status(404).json({
@@ -64,7 +79,7 @@ User Query: ${query}
       .map((k) => k.trim())
       .filter((k) => k.length > 0);
 
-    // ✅ Search in MongoDB using those keywords
+    // ✅ MongoDB query
     const allCourses = await Course.aggregate([
       {
         $match: {
@@ -105,8 +120,6 @@ User Query: ${query}
         },
       },
     ]);
-
-    console.log("Courses found from AI search:", allCourses);
 
     if (!allCourses || allCourses.length === 0) {
       return res.status(404).json({
