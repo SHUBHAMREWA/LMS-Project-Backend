@@ -22,45 +22,31 @@ export const searchWithai = async (req, res) => {
       apiKey: process.env.GEMINI_API_KEY,
     });
 
-    // ✅ Load Gemini model
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // or "gemini-2.5-flash" if supported
-    });
-
-    // ✅ AI Prompt
+    // ✅ Build the prompt
     const Prompt = `
 You are an intelligent course keyword generator.
 
 Courses List:
-- Web Development
-- UI/UX Designing
-- Ethical Hacking
-- AI/ML
-- App Development
-- Data Science
-- Data Analytics
-- AI Tools
+Web Development, UI/UX Designing, Ethical Hacking, AI/ML, App Development, Data Science, Data Analytics, AI Tools.
 
 Instructions:
-- Analyze the user's query and return one or more related course names.
-- Return **only course names**, comma-separated (e.g., "Web Development, AI/ML").
-- Do not explain or add extra text.
+- Analyze the user's query.
+- Return one or more related course names (comma-separated).
+- No explanation or extra text.
 
-Example 1:
+Example:
 Input: "I want to make a website for my business"
 Output: Web Development, UI/UX Designing
-
-Example 2:
-Input: "data"
-Output: Data Science, Data Analytics
-
-Now respond based on the user query below:
 
 User Query: ${query}
 `;
 
-    // ✅ Get AI response
-    const result = await model.generateContent(Prompt);
+    // ✅ Generate content with latest SDK syntax
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.0-flash", // or gemini-2.5-flash
+      contents: [{ role: "user", parts: [{ text: Prompt }] }],
+    });
+
     const aiResponseText = result.response.text();
 
     if (!aiResponseText || aiResponseText.trim() === "") {
@@ -72,13 +58,13 @@ User Query: ${query}
 
     console.log("AI response for course search:", aiResponseText);
 
-    // ✅ Extract keywords array
+    // ✅ Extract keywords
     const keywords = aiResponseText
       .split(",")
       .map((k) => k.trim())
       .filter((k) => k.length > 0);
 
-    // ✅ Search in MongoDB using AI keywords
+    // ✅ Search in MongoDB using those keywords
     const allCourses = await Course.aggregate([
       {
         $match: {
@@ -93,7 +79,7 @@ User Query: ${query}
       },
       {
         $lookup: {
-          from: "thumbnails", // collection ka naam
+          from: "thumbnails",
           localField: "_id",
           foreignField: "courseId",
           as: "thumbnails",
@@ -136,7 +122,7 @@ User Query: ${query}
       courseData: allCourses,
     });
   } catch (error) {
-    console.log("Course search with AI error ❌❌❌", error.message);
+    console.error("Course search with AI error ❌❌❌", error.message);
     return res.status(500).json({
       message: error.message,
       success: false,
